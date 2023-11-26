@@ -1,1 +1,1 @@
-rootProject.name = "ktor-sample"
+rootProject.name = "Collect_Invest_Collective_Service"

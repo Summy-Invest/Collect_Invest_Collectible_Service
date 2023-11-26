@@ -1,6 +1,6 @@
-package com.example
+package com.collect.invest
 
-import com.example.plugins.*
+import com.collect.invest.plugins.configureRouting
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*

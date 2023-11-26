@@ -7,7 +7,7 @@ plugins {
     id("io.ktor.plugin") version "2.3.5"
 }
 
-group = "com.example"
+group = "com.collect.invest"
 version = "0.0.1"
 
 application {
@@ -27,4 +27,14 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     testImplementation("io.ktor:ktor-server-tests-jvm")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
+    implementation("io.ktor:ktor-server-cors:$ktor_version")
+    implementation("io.ktor:ktor-server-swagger:$ktor_version")
+    implementation("io.ktor:ktor-server-websockets-jvm:$ktor_version")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("ch.qos.logback:logback-classic:1.3.11")
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
 }
