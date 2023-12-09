@@ -2,10 +2,6 @@ package com.collect.invest.plugins
 
 import com.collect.invest.CollectiblesManager
 import com.collect.invest.entity.CollectibleItem
-import com.collect.invest.plugins.controllers.AllCollectiblesResponse
-import com.collect.invest.plugins.controllers.BuyRequest
-import com.collect.invest.plugins.controllers.CollectibleResponse
-import com.collect.invest.plugins.controllers.SellRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -17,8 +13,6 @@ fun Application.configureRouting() {
 
     data class BuyRequest(val item: CollectibleItem, val userId: Int, val sharesToBuy: Int)
     data class SellRequest(val item: CollectibleItem, val userId: Int, val sharesToSell: Int)
-    data class CollectibleResponse(val collectible: CollectibleItem?)
-    data class AllCollectiblesResponse(val collectibles: List<CollectibleItem>)
 
     val collectiblesManager = CollectiblesManager()
 
@@ -47,8 +41,8 @@ fun Application.configureRouting() {
         get("/getCollectibleById/{collectibleId}") {
             try {
                 val collectibleId = call.parameters["collectibleId"]?.toLongOrNull()
-                val collectible = collectibleId?.let { collectiblesManager.getCollectibleById(collectibleId) }
-                call.respond(HttpStatusCode.OK, CollectibleResponse(collectible))
+                val collectible = collectiblesManager.getCollectibleById(collectibleId!!)
+                call.respond(HttpStatusCode.OK, collectible)
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.NotFound, "Error while processing getCollectibleById request")
             }
@@ -57,7 +51,7 @@ fun Application.configureRouting() {
         get("/getAllCollectibles") {
             try {
                 val collectibles = collectiblesManager.getAllCollectibles()
-                call.respond(HttpStatusCode.OK, AllCollectiblesResponse(collectibles))
+                call.respond(HttpStatusCode.OK, collectibles)
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.InternalServerError, "Error while processing getAllCollectibles request")
             }

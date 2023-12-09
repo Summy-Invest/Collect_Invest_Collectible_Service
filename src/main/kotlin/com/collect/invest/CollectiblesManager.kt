@@ -38,10 +38,7 @@ class CollectiblesManager {
     suspend fun getCollectibleById(collectibleId: Long): CollectibleItem {
         // запрос бд
         HttpClientFactory.createHttpClient().use { client ->
-            val response = client.get(""){
-                contentType(ContentType.Application.Json)
-                setBody(collectibleId)
-            }
+            val response = client.get("http://localhost:8080/collectableService/collectable/getCollectableById/$collectibleId")
             when (response.status){
                 HttpStatusCode.OK -> {
                     return response.body<CollectibleItem>()

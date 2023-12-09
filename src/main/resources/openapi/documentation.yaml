@@ -1,0 +1,104 @@
+openapi: "3.0.3"
+info:
+  title: "Collect_Invest_Collective_Service API"
+  description: "Collect_Invest_Collective_Service API"
+  version: "1.0.0"
+servers:
+- url: "https://Collect_Invest_Collective_Service"
+paths:
+  /buyCollectible:
+    post:
+      description: ""
+      requestBody:
+        content:
+          '*/*':
+            schema: {}
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Покупка успешно выполнена"
+        "400":
+          description: "Bad Request"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Error while processing buy request"
+  /getAllCollectibles:
+    get:
+      description: ""
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: {}
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Error while processing getAllCollectibles request"
+  /getCollectibleById/{collectibleId}:
+    get:
+      description: ""
+      parameters:
+      - name: "collectibleId"
+        in: "path"
+        required: true
+        schema:
+          type: "number"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema: {}
+        "404":
+          description: "Not Found"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Error while processing getCollectibleById request"
+  /sellCollectible:
+    post:
+      description: ""
+      requestBody:
+        content:
+          '*/*':
+            schema: {}
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Продажа успешно выполнена"
+        "500":
+          description: "Internal Server Error"
+          content:
+            '*/*':
+              schema:
+                type: "string"
+              examples:
+                Example#1:
+                  value: "Error while processing sell request"
