@@ -41,7 +41,10 @@ paths:
           description: "OK"
           content:
             '*/*':
-              schema: {}
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/CollectibleItem"
         "500":
           description: "Internal Server Error"
           content:
@@ -65,7 +68,8 @@ paths:
           description: "OK"
           content:
             '*/*':
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/CollectibleItem"
         "404":
           description: "Not Found"
           content:
@@ -102,3 +106,25 @@ paths:
               examples:
                 Example#1:
                   value: "Error while processing sell request"
+components:
+  schemas:
+    CollectibleItem:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+        name:
+          type: "string"
+        description:
+          type: "string"
+        category:
+          type: "string"
+        photoLink:
+          type: "string"
+        currentPrice:
+          type: "number"
+          format: "double"
+        availableShares:
+          type: "integer"
+          format: "int32"
