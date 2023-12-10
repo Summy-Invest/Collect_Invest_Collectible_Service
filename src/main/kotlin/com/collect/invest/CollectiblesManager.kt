@@ -71,7 +71,7 @@ class CollectiblesManager {
         }
     }
 
-    fun getAllCollectibles(): List<CollectibleItem> {
+    suspend fun getAllCollectibles(): List<CollectibleItem> {
         // запрос бд
         HttpClientFactory.createHttpClient().use { client ->
             val response = client.get("http://localhost:8080/collectableService/collectable/getAllCollectibles")
