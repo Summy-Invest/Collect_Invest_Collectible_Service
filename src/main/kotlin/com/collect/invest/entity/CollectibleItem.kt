@@ -8,7 +8,7 @@ data class CollectibleItem(
     val name: String,
     val description: String,
     val category: String,
-    val photoLink: String,
+    val photoUrl: String,
     val currentPrice: Double,
     var availableShares: Int
 )
