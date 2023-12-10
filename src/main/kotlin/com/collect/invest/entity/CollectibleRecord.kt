@@ -7,7 +7,7 @@ data class CollectibleRecord(
     val date: LocalDateTime,
     val count: Int,
     val collectibleId: Long,
-    val userId: Int,
+    val userId: Long,
     val totalPrice: Double,
-    val transactionId: Int?
+    val transactionId: Long
 )

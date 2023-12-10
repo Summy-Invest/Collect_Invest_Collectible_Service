@@ -11,8 +11,8 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
 
-    data class BuyRequest(val item: CollectibleItem, val userId: Int, val sharesToBuy: Int)
-    data class SellRequest(val item: CollectibleItem, val userId: Int, val sharesToSell: Int)
+    data class BuyRequest(val item: CollectibleItem, val userId: Long, val sharesToBuy: Int)
+    data class SellRequest(val item: CollectibleItem, val userId: Long, val sharesToSell: Int)
 
     val collectiblesManager = CollectiblesManager()
 

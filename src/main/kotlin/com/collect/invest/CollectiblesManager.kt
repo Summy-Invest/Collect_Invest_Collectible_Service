@@ -1,15 +1,19 @@
 package com.collect.invest
 
 import com.collect.invest.entity.CollectibleItem
+import com.collect.invest.entity.CollectibleRecord
+import com.collect.invest.entity.SellBuyResponse
+import com.collect.invest.entity.UpdateResponse
 import com.collect.invest.utils.HttpClientFactory
 import io.ktor.http.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import java.lang.Exception
+import java.time.LocalDateTime
 
 class CollectiblesManager {
 
-    suspend fun buyCollectible(item: CollectibleItem, userId: Int, sharesToBuy: Int) {
+    suspend fun buyCollectible(item: CollectibleItem, userId: Long, sharesToBuy: Int) {
         if (item.availableShares >= sharesToBuy) {
             val totalPrice = sharesToBuy * item.currentPrice * 1.05
             item.availableShares -= sharesToBuy
@@ -18,12 +22,25 @@ class CollectiblesManager {
                 val buyResponse = client.post("http://localhost:8080/buy/$userId/$totalPrice")
                 if (buyResponse.status != HttpStatusCode.OK) {
                     throw Exception("Error while processing buy request")
+                } else {
+                    val transactionId = buyResponse.body<SellBuyResponse>().id
+                    val record = CollectibleRecord(1, LocalDateTime.now(), sharesToBuy, item.id, userId, totalPrice, transactionId)
+                    //Создание записи портфолио
+                    val createRecResponse = client.post("http://localhost:8080/collectableService/??"){
+                        contentType(ContentType.Application.Json)
+                        setBody(record)
+                    }
                 }
             }
 
+            val updResp = UpdateResponse(item.id, item.availableShares)
             HttpClientFactory.createHttpClient().use { client ->
+                // Обновление коллекционки
                 val updateResponse =
-                    client.post("http://localhost:8080/collectableService/collectable/updateCollectableById/${item.id}")
+                    client.post("http://localhost:8080/collectableService/collectable/updateCollectable"){
+                        contentType(ContentType.Application.Json)
+                        setBody(updResp)
+                    }
                 if (updateResponse.status != HttpStatusCode.OK) {
                     throw Exception("Error while updating collectable")
                 }
@@ -34,20 +51,33 @@ class CollectiblesManager {
     }
 
 
-    suspend fun sellCollectible(item: CollectibleItem, userId: Int, sharesToSell: Int) {
+    suspend fun sellCollectible(item: CollectibleItem, userId: Long, sharesToSell: Int) {
+        //проверка наличия долей у пользователя
         val totalPrice = sharesToSell * item.currentPrice * 0.95
         item.availableShares += sharesToSell
 
         HttpClientFactory.createHttpClient().use { client ->
             val sellResponse = client.post("http://localhost:8080/sell/$userId/$totalPrice")
-            if (sellResponse.status != HttpStatusCode.OK) {
+            if (sellResponse.status != HttpStatusCode.OK){
                 throw Exception("Error while processing buy request")
+            } else {
+            val transactionId = sellResponse.body<SellBuyResponse>().id
+            val record = CollectibleRecord(1, LocalDateTime.now(), sharesToSell, item.id, userId, totalPrice, transactionId)
+            //Создание записи портфолио
+            val createRecResponse = client.post("http://localhost:8080/collectableService/??"){
+                contentType(ContentType.Application.Json)
+                setBody(record)
             }
         }
+        }
 
+        val updResp = UpdateResponse(item.id, item.availableShares)
         HttpClientFactory.createHttpClient().use { client ->
             val updateResponse =
-                client.post("http://localhost:8080/collectableService/collectable/updateCollectableById/${item.id}")
+                client.post("http://localhost:8080/collectableService/collectable/updateCollectableById/${item.id}"){
+                    contentType(ContentType.Application.Json)
+                    setBody(updResp)
+                }
             if (updateResponse.status != HttpStatusCode.OK) {
                 throw Exception("Error while updating collectable")
             }
@@ -85,10 +115,5 @@ class CollectiblesManager {
                 }
             }
         }
-//        return listOf(
-//            CollectibleItem(1, "Item1", "Description1", "Category1", "PhotoLink1", 50.0, 5),
-//            CollectibleItem(2, "Item2", "Description2", "Category2", "PhotoLink2", 75.0, 8)
-//        )
     }
-
 }
