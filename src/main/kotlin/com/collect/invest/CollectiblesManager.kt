@@ -14,6 +14,8 @@ import java.time.LocalDateTime
 class CollectiblesManager {
 
     suspend fun buyCollectible(item: CollectibleItem, userId: Long, sharesToBuy: Int) {
+        //TODO переделать item в просто id коллекционки и добавить priceChangeBuy/priceChangeSell для соответсвующих
+        // методов (методы реализованы в конце файла)
         if (item.availableShares >= sharesToBuy) {
             val totalPrice = sharesToBuy * item.currentPrice * 1.05
             item.availableShares -= sharesToBuy
@@ -116,4 +118,7 @@ class CollectiblesManager {
             }
         }
     }
+
+    private fun priceChangeBuy(sharesToBuy: Int, price: Double) = price + price * 0.01 * sharesToBuy
+    private fun  priceChangeSell(sharesToSell: Int, price: Double) = price - price * 0.01 * sharesToSell
 }
