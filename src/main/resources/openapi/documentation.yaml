@@ -4,7 +4,7 @@ info:
   description: "Collect_Invest_Collective_Service API"
   version: "1.0.0"
 servers:
-- url: "https://Collect_Invest_Collective_Service"
+- url: "http://localhost:3937"
 paths:
   /buyCollectible:
     post:
@@ -12,7 +12,8 @@ paths:
       requestBody:
         content:
           '*/*':
-            schema: {}
+            schema:
+              $ref: "#/components/schemas/BuyRequest"
         required: true
       responses:
         "200":
@@ -30,9 +31,6 @@ paths:
             '*/*':
               schema:
                 type: "string"
-              examples:
-                Example#1:
-                  value: "Error while processing buy request"
   /getAllCollectibles:
     get:
       description: ""
@@ -51,9 +49,6 @@ paths:
             '*/*':
               schema:
                 type: "string"
-              examples:
-                Example#1:
-                  value: "Error while processing getAllCollectibles request"
   /getCollectibleById/{collectibleId}:
     get:
       description: ""
@@ -76,16 +71,14 @@ paths:
             '*/*':
               schema:
                 type: "string"
-              examples:
-                Example#1:
-                  value: "Error while processing getCollectibleById request"
   /sellCollectible:
     post:
       description: ""
       requestBody:
         content:
           '*/*':
-            schema: {}
+            schema:
+              $ref: "#/components/schemas/SellRequest"
         required: true
       responses:
         "200":
@@ -103,11 +96,20 @@ paths:
             '*/*':
               schema:
                 type: "string"
-              examples:
-                Example#1:
-                  value: "Error while processing sell request"
 components:
   schemas:
+    BuyRequest:
+      type: "object"
+      properties:
+        collectibleId:
+          type: "integer"
+          format: "int64"
+        userId:
+          type: "integer"
+          format: "int64"
+        sharesToBuy:
+          type: "integer"
+          format: "int32"
     CollectibleItem:
       type: "object"
       properties:
@@ -120,11 +122,23 @@ components:
           type: "string"
         category:
           type: "string"
-        photoLink:
+        photoUrl:
           type: "string"
         currentPrice:
           type: "number"
           format: "double"
         availableShares:
+          type: "integer"
+          format: "int32"
+    SellRequest:
+      type: "object"
+      properties:
+        collectibleId:
+          type: "integer"
+          format: "int64"
+        userId:
+          type: "integer"
+          format: "int64"
+        sharesToSell:
           type: "integer"
           format: "int32"

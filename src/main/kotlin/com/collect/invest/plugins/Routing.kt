@@ -1,7 +1,8 @@
 package com.collect.invest.plugins
 
 import com.collect.invest.CollectiblesManager
-import com.collect.invest.entity.CollectibleItem
+import com.collect.invest.entity.BuyRequest
+import com.collect.invest.entity.SellRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -11,8 +12,6 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
 
-    data class BuyRequest(val collectibleId: Long, val userId: Long, val sharesToBuy: Int)
-    data class SellRequest(val collectibleId: Long, val userId: Long, val sharesToSell: Int)
 
     val collectiblesManager = CollectiblesManager()
 
