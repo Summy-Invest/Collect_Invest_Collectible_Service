@@ -24,7 +24,7 @@ fun Application.configureRouting() {
                 collectiblesManager.buyCollectible(buyRequest.collectibleId, buyRequest.userId, buyRequest.sharesToBuy)
                 call.respond(HttpStatusCode.OK, "Покупка успешно выполнена")
             } catch (e: Throwable) {
-                call.respond(HttpStatusCode.BadRequest, "Error while processing buy request")
+                call.respond(HttpStatusCode.BadRequest, e.toString())
             }
         }
 
@@ -34,7 +34,7 @@ fun Application.configureRouting() {
                 collectiblesManager.sellCollectible(sellRequest.collectibleId, sellRequest.userId, sellRequest.sharesToSell)
                 call.respond(HttpStatusCode.OK, "Продажа успешно выполнена")
             } catch (e: Throwable) {
-                call.respond(HttpStatusCode.InternalServerError, "Error while processing sell request")
+                call.respond(HttpStatusCode.InternalServerError, e.toString())
             }
         }
 
@@ -44,7 +44,7 @@ fun Application.configureRouting() {
                 val collectible = collectiblesManager.getCollectibleById(collectibleId!!)
                 call.respond(HttpStatusCode.OK, collectible)
             } catch (e: Throwable) {
-                call.respond(HttpStatusCode.NotFound, "Error while processing getCollectibleById request")
+                call.respond(HttpStatusCode.NotFound, e.toString())
             }
         }
 
@@ -53,7 +53,7 @@ fun Application.configureRouting() {
                 val collectibles = collectiblesManager.getAllCollectibles()
                 call.respond(HttpStatusCode.OK, collectibles)
             } catch (e: Throwable) {
-                call.respond(HttpStatusCode.InternalServerError, "Error while processing getAllCollectibles request")
+                call.respond(HttpStatusCode.InternalServerError, e.toString())
             }
         }
     }
