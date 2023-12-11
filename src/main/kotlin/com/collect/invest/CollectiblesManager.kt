@@ -1,9 +1,6 @@
 package com.collect.invest
 
-import com.collect.invest.entity.CollectibleItem
-import com.collect.invest.entity.CollectibleRecord
-import com.collect.invest.entity.SellBuyResponse
-import com.collect.invest.entity.UpdateResponse
+import com.collect.invest.entity.*
 import com.collect.invest.utils.HttpClientSingleton
 import io.ktor.http.*
 import io.ktor.client.call.*
@@ -17,9 +14,9 @@ class CollectiblesManager {
     private val db = "http://localhost:8080"
     private val financial = "http://localhost:7777"
 
-    suspend fun buyCollectible(item: CollectibleItem, userId: Long, sharesToBuy: Int) {
-        //TODO переделать item в просто id коллекционки и добавить priceChangeBuy/priceChangeSell для соответсвующих
-        // методов (методы реализованы в конце файла)
+
+    suspend fun buyCollectible(collectibleId: Long, userId: Long, sharesToBuy: Int) {
+        val item = getCollectibleById(collectibleId)
         if (item.availableShares >= sharesToBuy) {
             val totalPrice = sharesToBuy * item.currentPrice * 1.05
             item.availableShares -= sharesToBuy
@@ -28,89 +25,180 @@ class CollectiblesManager {
             val buyResponse = client.post("$financial/buy/$userId/$totalPrice")
             when (buyResponse.status) {
                 HttpStatusCode.OK -> {
-                    if (buyResponse.body<SellBuyResponse>().status == "success") {
-                        val updResp = UpdateResponse(item.id, item.availableShares)
-                        // Обновление количества доступных акций
-                        val updateResponse =
-                            client.post("$db/collectableService/collectable/updateCollectable") {
-                                contentType(ContentType.Application.Json)
-                                setBody(updResp)
+                    val transaction = buyResponse.body<SellBuyResponse>()
+                    val transactionId = transaction.id
+                    if (transaction.status == "success") {
+                        val record =
+                            CollectibleRecord(
+                                1,
+                                LocalDateTime.now(),
+                                sharesToBuy,
+                                item.id,
+                                userId,
+                                totalPrice,
+                                transactionId
+                            )
+                        runBlocking {
+                            val addPortfolioRecordResponse = async {
+                                client.post("$db/collectableService/collectable/addPortfolioRecord") {
+                                    contentType(ContentType.Application.Json)
+                                    setBody(record)
+                                }
                             }
-                        if (updateResponse.status != HttpStatusCode.OK) {
-                            throw Exception("Error while updating collectable")
+
+                            val updateAvailableShares = UpdateAvailableShares(item.id, item.availableShares)
+                            val updateAvailableSharesResponse = async {
+                                client.patch("$db/collectableService/collectable/updateCollectableById") {
+                                    contentType(ContentType.Application.Json)
+                                    setBody(updateAvailableShares)
+                                }
+                            }
+
+                            when (addPortfolioRecordResponse.await().status) {
+                                HttpStatusCode.OK -> {
+
+                                }
+
+                                else -> {
+                                    throw Exception("Error while adding portfolio record " +
+                                            "${addPortfolioRecordResponse.await().status}")
+                                }
+                            }
+
+                            when (updateAvailableSharesResponse.await().status) {
+                                HttpStatusCode.OK -> {
+
+                                }
+
+                                else -> {
+                                    throw Exception("Error while updating collectable " +
+                                            "${updateAvailableSharesResponse.await().status}")
+                                }
+                            }
                         }
+                        updatePrice(collectibleId, priceChangeBuy(sharesToBuy, item.currentPrice))
 
                     }
+
+                    //если статус транзакции был не success
                     else {
-                        throw Exception("transaction is unsuccessful")
+                        throw Exception("Transaction is unsuccessful")
                     }
+
                 }
+
+                //если не удалось получить ответ от Financial Service
                 else -> {
-                    throw Exception("financial service unavailable")
+                    throw Exception("Financial service unavailable ${buyResponse.status}")
                 }
             }
-        } else {
+
+        }
+
+        //если нет столько долей в доступе
+        else {
             throw Exception("Недостаточно доступных долей для покупки.")
         }
     }
 
 
-    suspend fun sellCollectible(item: CollectibleItem, userId: Long, sharesToSell: Int) {
-        //проверка наличия долей у пользователя
-        val totalPrice = sharesToSell * item.currentPrice * 0.95
-        item.availableShares += sharesToSell
-
+    suspend fun sellCollectible(collectibleId: Long, userId: Long, sharesToSell: Int) {
+        val item = getCollectibleById(collectibleId)
         val client = HttpClientSingleton.client
-        val sellResponse = client.post("$db/sell/$userId/$totalPrice")
-        when(sellResponse.status) {
+
+        val availableSharesResponse =
+            client.get("$db/collectableService/collectable/getUserCollectibles/$userId/$collectibleId")
+        when (availableSharesResponse.status) {
             HttpStatusCode.OK -> {
-                val transactionId = sellResponse.body<SellBuyResponse>().id
-                val record =
-                    CollectibleRecord(1, LocalDateTime.now(), sharesToSell, item.id, userId, totalPrice, transactionId)
-                runBlocking {
-                    //Создание записи портфолио
-                    val createRecResponse = async {
-                        client.post("$db/collectableService/collectable/addPortfolioRecord") {
-                            contentType(ContentType.Application.Json)
-                            setBody(record)
-                        }
-                    }
+                val userShares = availableSharesResponse.body<UserShares>().shares
+                if (userShares >= sharesToSell) {
+                    val totalPrice = sharesToSell * item.currentPrice * 0.95
+                    item.availableShares += sharesToSell
 
-                    val updResp = UpdateResponse(item.id, item.availableShares)
-                    val updateResponse = async {
-                        client.post("$db/collectableService/collectable/updateCollectableById/${item.id}") {
-                            contentType(ContentType.Application.Json)
-                            setBody(updResp)
-                        }
-                    }
-
-                    when (createRecResponse.await().status) {
+                    val sellResponse = client.post("$financial/sell/$userId/$totalPrice")
+                    when (sellResponse.status) {
                         HttpStatusCode.OK -> {
+                            val transaction = sellResponse.body<SellBuyResponse>()
+                            val transactionId = transaction.id
+                            if (transaction.status == "success") {
+                                val record =
+                                    CollectibleRecord(
+                                        1,
+                                        LocalDateTime.now(),
+                                        0 - sharesToSell,
+                                        item.id,
+                                        userId,
+                                        totalPrice,
+                                        transactionId
+                                    )
+                                runBlocking {
+                                    //Создание записи портфолио
+                                    val addPortfolioRecordResponse = async {
+                                        client.post("$db/collectableService/collectable/addPortfolioRecord") {
+                                            contentType(ContentType.Application.Json)
+                                            setBody(record)
+                                        }
+                                    }
 
+                                    val updateAvailableShares = UpdateAvailableShares(item.id, item.availableShares)
+                                    val updateAvailableSharesResponse = async {
+                                        client.patch("$db/collectableService/collectable/updateCollectableById/${item.id}") {
+                                            contentType(ContentType.Application.Json)
+                                            setBody(updateAvailableShares)
+                                        }
+                                    }
+
+                                    when (addPortfolioRecordResponse.await().status) {
+                                        HttpStatusCode.OK -> {
+
+                                        }
+
+                                        else -> {
+                                            throw Exception("Error while adding portfolio record " +
+                                                    "${addPortfolioRecordResponse.await().status}}")
+                                        }
+                                    }
+
+                                    when (updateAvailableSharesResponse.await().status) {
+                                        HttpStatusCode.OK -> {
+
+                                        }
+
+                                        else -> {
+                                            throw Exception("Error while updating collectable " +
+                                                    "${updateAvailableSharesResponse.await().status}")
+                                        }
+                                    }
+                                }
+                                updatePrice(collectibleId, priceChangeSell(sharesToSell, item.currentPrice))
+                            }
+
+                            //если статус транзакции был не success
+                            else {
+                                throw Exception("Transaction is unsuccessful")
+                            }
                         }
 
+                        //если не удалось получить ответ от Financial Service
                         else -> {
-                            throw Exception("Error while adding portfolio record")
-                        }
-                    }
-
-                    when (updateResponse.await().status) {
-                        HttpStatusCode.OK -> {
-
-                        }
-
-                        else -> {
-                            throw Exception("Error while updating collectable")
+                            throw Exception("Financial service unavailable ${sellResponse.status}")
                         }
                     }
                 }
+
+                //если у пользователя недостаточно акций для продажи
+                else {
+                    throw Exception("The user does not have enough shares")
+                }
             }
 
+            //если не удалось получить доступное у пользователя количество коллекционок
             else -> {
-                throw Exception("Error while processing buy request")
+                throw Exception("Error while getting user available shares amount ${availableSharesResponse.status}")
             }
         }
     }
+
 
     suspend fun getCollectibleById(collectibleId: Long): CollectibleItem {
         // запрос бд
@@ -122,7 +210,7 @@ class CollectiblesManager {
             }
 
             else -> {
-                throw Exception("Error while getCollectibleById")
+                throw Exception("Error while getCollectibleById ${response.status}")
             }
         }
     }
@@ -130,14 +218,45 @@ class CollectiblesManager {
     suspend fun getAllCollectibles(): List<CollectibleItem> {
         // запрос бд
         val client = HttpClientSingleton.client
-        val response = client.get("http://localhost:8080/collectableService/collectable/getAllCollectibles")
+        val response = client.get("$db/collectableService/collectable/getAllCollectibles")
         when (response.status){
             HttpStatusCode.OK -> {
                 return response.body<List<CollectibleItem>>()
             }
 
             else -> {
-                throw Exception("Error while getAllCollectibles")
+                throw Exception("Error while getAllCollectibles ${response.status}")
+            }
+        }
+    }
+
+//    private suspend fun getPrice(collectibleId: Long): Double{
+//        val client = HttpClientSingleton.client
+//        val response = client.get("$db/collectableService/collectable/getPrice/$collectibleId")
+//        when (response.status){
+//            HttpStatusCode.OK -> {
+//                return response.body<CollectiblePrice>().currentPrice
+//            }
+//
+//            else -> {
+//                throw Exception("Error while getting current collectible price")
+//            }
+//        }
+//    }
+
+    private suspend fun updatePrice(collectibleId: Long, newPrice: Double){
+        val client = HttpClientSingleton.client
+        val response = client.patch("$db/collectableService/collectable/updatePrice"){
+            contentType(ContentType.Application.Json)
+            setBody(UpdateCollectiblePrice(id = collectibleId, currentPrice = newPrice))
+        }
+        when (response.status){
+            HttpStatusCode.OK -> {
+                return
+            }
+
+            else -> {
+                throw Exception("Error while updating collectible price ${response.status}")
             }
         }
     }

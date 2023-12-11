@@ -1,6 +1,6 @@
 package com.collect.invest.entity
 
-data class UpdateResponse(
+data class UpdateAvailableShares(
     val id: Long,
     val availableShares: Int
 )

@@ -11,8 +11,8 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
 
-    data class BuyRequest(val item: CollectibleItem, val userId: Long, val sharesToBuy: Int)
-    data class SellRequest(val item: CollectibleItem, val userId: Long, val sharesToSell: Int)
+    data class BuyRequest(val collectibleId: Long, val userId: Long, val sharesToBuy: Int)
+    data class SellRequest(val collectibleId: Long, val userId: Long, val sharesToSell: Int)
 
     val collectiblesManager = CollectiblesManager()
 
@@ -21,7 +21,7 @@ fun Application.configureRouting() {
         post("/buyCollectible") {
             try {
                 val buyRequest = call.receive<BuyRequest>()
-                collectiblesManager.buyCollectible(buyRequest.item, buyRequest.userId, buyRequest.sharesToBuy)
+                collectiblesManager.buyCollectible(buyRequest.collectibleId, buyRequest.userId, buyRequest.sharesToBuy)
                 call.respond(HttpStatusCode.OK, "Покупка успешно выполнена")
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.BadRequest, "Error while processing buy request")
@@ -31,7 +31,7 @@ fun Application.configureRouting() {
         post("/sellCollectible") {
             try {
                 val sellRequest = call.receive<SellRequest>()
-                collectiblesManager.sellCollectible(sellRequest.item, sellRequest.userId, sellRequest.sharesToSell)
+                collectiblesManager.sellCollectible(sellRequest.collectibleId, sellRequest.userId, sellRequest.sharesToSell)
                 call.respond(HttpStatusCode.OK, "Продажа успешно выполнена")
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.InternalServerError, "Error while processing sell request")
