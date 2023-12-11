@@ -4,14 +4,18 @@ import com.collect.invest.entity.CollectibleItem
 import com.collect.invest.entity.CollectibleRecord
 import com.collect.invest.entity.SellBuyResponse
 import com.collect.invest.entity.UpdateResponse
-import com.collect.invest.utils.HttpClientFactory
+import com.collect.invest.utils.HttpClientSingleton
 import io.ktor.http.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import java.lang.Exception
 import java.time.LocalDateTime
 
 class CollectiblesManager {
+    private val db = "http://localhost:8080"
+    private val financial = "http://localhost:7777"
 
     suspend fun buyCollectible(item: CollectibleItem, userId: Long, sharesToBuy: Int) {
         //TODO переделать item в просто id коллекционки и добавить priceChangeBuy/priceChangeSell для соответсвующих
@@ -20,31 +24,29 @@ class CollectiblesManager {
             val totalPrice = sharesToBuy * item.currentPrice * 1.05
             item.availableShares -= sharesToBuy
 
-            HttpClientFactory.createHttpClient().use { client ->
-                val buyResponse = client.post("http://localhost:8080/buy/$userId/$totalPrice")
-                if (buyResponse.status != HttpStatusCode.OK) {
-                    throw Exception("Error while processing buy request")
-                } else {
-                    val transactionId = buyResponse.body<SellBuyResponse>().id
-                    val record = CollectibleRecord(1, LocalDateTime.now(), sharesToBuy, item.id, userId, totalPrice, transactionId)
-                    //Создание записи портфолио
-                    val createRecResponse = client.post("http://localhost:8080/collectableService/??"){
-                        contentType(ContentType.Application.Json)
-                        setBody(record)
+            val client = HttpClientSingleton.client
+            val buyResponse = client.post("$financial/buy/$userId/$totalPrice")
+            when (buyResponse.status) {
+                HttpStatusCode.OK -> {
+                    if (buyResponse.body<SellBuyResponse>().status == "success") {
+                        val updResp = UpdateResponse(item.id, item.availableShares)
+                        // Обновление количества доступных акций
+                        val updateResponse =
+                            client.post("$db/collectableService/collectable/updateCollectable") {
+                                contentType(ContentType.Application.Json)
+                                setBody(updResp)
+                            }
+                        if (updateResponse.status != HttpStatusCode.OK) {
+                            throw Exception("Error while updating collectable")
+                        }
+
+                    }
+                    else {
+                        throw Exception("transaction is unsuccessful")
                     }
                 }
-            }
-
-            val updResp = UpdateResponse(item.id, item.availableShares)
-            HttpClientFactory.createHttpClient().use { client ->
-                // Обновление коллекционки
-                val updateResponse =
-                    client.post("http://localhost:8080/collectableService/collectable/updateCollectable"){
-                        contentType(ContentType.Application.Json)
-                        setBody(updResp)
-                    }
-                if (updateResponse.status != HttpStatusCode.OK) {
-                    throw Exception("Error while updating collectable")
+                else -> {
+                    throw Exception("financial service unavailable")
                 }
             }
         } else {
@@ -58,63 +60,84 @@ class CollectiblesManager {
         val totalPrice = sharesToSell * item.currentPrice * 0.95
         item.availableShares += sharesToSell
 
-        HttpClientFactory.createHttpClient().use { client ->
-            val sellResponse = client.post("http://localhost:8080/sell/$userId/$totalPrice")
-            if (sellResponse.status != HttpStatusCode.OK){
-                throw Exception("Error while processing buy request")
-            } else {
-            val transactionId = sellResponse.body<SellBuyResponse>().id
-            val record = CollectibleRecord(1, LocalDateTime.now(), sharesToSell, item.id, userId, totalPrice, transactionId)
-            //Создание записи портфолио
-            val createRecResponse = client.post("http://localhost:8080/collectableService/??"){
-                contentType(ContentType.Application.Json)
-                setBody(record)
-            }
-        }
-        }
+        val client = HttpClientSingleton.client
+        val sellResponse = client.post("$db/sell/$userId/$totalPrice")
+        when(sellResponse.status) {
+            HttpStatusCode.OK -> {
+                val transactionId = sellResponse.body<SellBuyResponse>().id
+                val record =
+                    CollectibleRecord(1, LocalDateTime.now(), sharesToSell, item.id, userId, totalPrice, transactionId)
+                runBlocking {
+                    //Создание записи портфолио
+                    val createRecResponse = async {
+                        client.post("$db/collectableService/collectable/addPortfolioRecord") {
+                            contentType(ContentType.Application.Json)
+                            setBody(record)
+                        }
+                    }
 
-        val updResp = UpdateResponse(item.id, item.availableShares)
-        HttpClientFactory.createHttpClient().use { client ->
-            val updateResponse =
-                client.post("http://localhost:8080/collectableService/collectable/updateCollectableById/${item.id}"){
-                    contentType(ContentType.Application.Json)
-                    setBody(updResp)
+                    val updResp = UpdateResponse(item.id, item.availableShares)
+                    val updateResponse = async {
+                        client.post("$db/collectableService/collectable/updateCollectableById/${item.id}") {
+                            contentType(ContentType.Application.Json)
+                            setBody(updResp)
+                        }
+                    }
+
+                    when (createRecResponse.await().status) {
+                        HttpStatusCode.OK -> {
+
+                        }
+
+                        else -> {
+                            throw Exception("Error while adding portfolio record")
+                        }
+                    }
+
+                    when (updateResponse.await().status) {
+                        HttpStatusCode.OK -> {
+
+                        }
+
+                        else -> {
+                            throw Exception("Error while updating collectable")
+                        }
+                    }
                 }
-            if (updateResponse.status != HttpStatusCode.OK) {
-                throw Exception("Error while updating collectable")
+            }
+
+            else -> {
+                throw Exception("Error while processing buy request")
             }
         }
-
     }
 
     suspend fun getCollectibleById(collectibleId: Long): CollectibleItem {
         // запрос бд
-        HttpClientFactory.createHttpClient().use { client ->
-            val response = client.get("http://localhost:8080/collectableService/collectable/getCollectableById/$collectibleId")
-            when (response.status){
-                HttpStatusCode.OK -> {
-                    return response.body<CollectibleItem>()
-                }
+        val client = HttpClientSingleton.client
+        val response = client.get("$db/collectableService/collectable/getCollectableById/$collectibleId")
+        when (response.status){
+            HttpStatusCode.OK -> {
+                return response.body<CollectibleItem>()
+            }
 
-                else -> {
-                    throw Exception("Error while getCollectibleById")
-                }
+            else -> {
+                throw Exception("Error while getCollectibleById")
             }
         }
     }
 
     suspend fun getAllCollectibles(): List<CollectibleItem> {
         // запрос бд
-        HttpClientFactory.createHttpClient().use { client ->
-            val response = client.get("http://localhost:8080/collectableService/collectable/getAllCollectibles")
-            when (response.status){
-                HttpStatusCode.OK -> {
-                    return response.body<List<CollectibleItem>>()
-                }
+        val client = HttpClientSingleton.client
+        val response = client.get("http://localhost:8080/collectableService/collectable/getAllCollectibles")
+        when (response.status){
+            HttpStatusCode.OK -> {
+                return response.body<List<CollectibleItem>>()
+            }
 
-                else -> {
-                    throw Exception("Error while getAllCollectibles")
-                }
+            else -> {
+                throw Exception("Error while getAllCollectibles")
             }
         }
     }
