@@ -18,8 +18,8 @@ fun Application.configureRouting() {
 
         post("/buyCollectible") {
             try {
-                val buySellRequest = call.receive<BuySellRequest>()
-                collectiblesManager.buyCollectible(buySellRequest.collectibleId, buySellRequest.userId, buySellRequest.shares)
+                val buyRequest = call.receive<BuySellRequest>()
+                collectiblesManager.buyCollectible(buyRequest.collectibleId, buyRequest.userId, buyRequest.shares)
                 call.respond(HttpStatusCode.OK, "Покупка успешно выполнена")
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.BadRequest, e.toString())
@@ -49,6 +49,16 @@ fun Application.configureRouting() {
         get("/getAllCollectibles") {
             try {
                 val collectibles = collectiblesManager.getAllCollectibles()
+                call.respond(HttpStatusCode.OK, collectibles)
+            } catch (e: Throwable) {
+                call.respond(HttpStatusCode.InternalServerError, e.toString())
+            }
+        }
+
+        get("/getAllUserCollectibles/{userId}") {
+            try {
+                val userId = call.parameters["userId"]!!.toLong()
+                val collectibles = collectiblesManager.getAllUserCollectibles(userId)
                 call.respond(HttpStatusCode.OK, collectibles)
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.InternalServerError, e.toString())

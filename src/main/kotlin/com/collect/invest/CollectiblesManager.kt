@@ -230,6 +230,20 @@ class CollectiblesManager {
         }
     }
 
+    suspend fun getAllUserCollectibles(userId: Long) : List<CollectibleItem> {
+        val client = HttpClientSingleton.client
+        val response = client.get("$db//collectableService/collectable/getAllUserCollectibles/$userId")
+        when (response.status) {
+            HttpStatusCode.OK -> {
+                return response.body<List<CollectibleItem>>()
+            }
+
+            else -> {
+                throw Exception("Error while getAllUserCollectibles ${response.status}")
+            }
+        }
+    }
+
 //    private suspend fun getPrice(collectibleId: Long): Double{
 //        val client = HttpClientSingleton.client
 //        val response = client.get("$db/collectableService/collectable/getPrice/$collectibleId")
