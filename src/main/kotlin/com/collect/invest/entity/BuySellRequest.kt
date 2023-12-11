@@ -1,7 +1,7 @@
 package com.collect.invest.entity
 
-data class SellRequest(
+data class BuySellRequest(
     val collectibleId: Long,
     val userId: Long,
-    val sharesToSell: Int
+    val shares: Int
 )

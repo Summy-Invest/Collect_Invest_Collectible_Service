@@ -1,8 +1,7 @@
 package com.collect.invest.plugins
 
 import com.collect.invest.CollectiblesManager
-import com.collect.invest.entity.BuyRequest
-import com.collect.invest.entity.SellRequest
+import com.collect.invest.entity.BuySellRequest
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -19,8 +18,8 @@ fun Application.configureRouting() {
 
         post("/buyCollectible") {
             try {
-                val buyRequest = call.receive<BuyRequest>()
-                collectiblesManager.buyCollectible(buyRequest.collectibleId, buyRequest.userId, buyRequest.sharesToBuy)
+                val buySellRequest = call.receive<BuySellRequest>()
+                collectiblesManager.buyCollectible(buySellRequest.collectibleId, buySellRequest.userId, buySellRequest.shares)
                 call.respond(HttpStatusCode.OK, "Покупка успешно выполнена")
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.BadRequest, e.toString())
@@ -29,8 +28,8 @@ fun Application.configureRouting() {
 
         post("/sellCollectible") {
             try {
-                val sellRequest = call.receive<SellRequest>()
-                collectiblesManager.sellCollectible(sellRequest.collectibleId, sellRequest.userId, sellRequest.sharesToSell)
+                val sellRequest = call.receive<BuySellRequest>()
+                collectiblesManager.sellCollectible(sellRequest.collectibleId, sellRequest.userId, sellRequest.shares)
                 call.respond(HttpStatusCode.OK, "Продажа успешно выполнена")
             } catch (e: Throwable) {
                 call.respond(HttpStatusCode.InternalServerError, e.toString())
