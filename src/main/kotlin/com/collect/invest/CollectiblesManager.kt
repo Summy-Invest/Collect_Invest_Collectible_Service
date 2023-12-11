@@ -6,7 +6,7 @@ import io.ktor.http.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import kotlinx.coroutines.async
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import java.lang.Exception
 import java.time.LocalDateTime
 
@@ -38,7 +38,7 @@ class CollectiblesManager {
                                 totalPrice,
                                 transactionId
                             )
-                        runBlocking {
+                        coroutineScope {
                             val addPortfolioRecordResponse = async {
                                 client.post("$db/collectableService/collectable/addPortfolioRecord") {
                                     contentType(ContentType.Application.Json)
@@ -131,7 +131,7 @@ class CollectiblesManager {
                                         totalPrice,
                                         transactionId
                                     )
-                                runBlocking {
+                                coroutineScope {
                                     //Создание записи портфолио
                                     val addPortfolioRecordResponse = async {
                                         client.post("$db/collectableService/collectable/addPortfolioRecord") {
