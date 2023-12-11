@@ -13,7 +13,7 @@ paths:
         content:
           '*/*':
             schema:
-              $ref: "#/components/schemas/BuyRequest"
+              $ref: "#/components/schemas/BuySellRequest"
         required: true
       responses:
         "200":
@@ -78,7 +78,7 @@ paths:
         content:
           '*/*':
             schema:
-              $ref: "#/components/schemas/SellRequest"
+              $ref: "#/components/schemas/BuySellRequest"
         required: true
       responses:
         "200":
@@ -98,7 +98,7 @@ paths:
                 type: "string"
 components:
   schemas:
-    BuyRequest:
+    BuySellRequest:
       type: "object"
       properties:
         collectibleId:
@@ -107,7 +107,7 @@ components:
         userId:
           type: "integer"
           format: "int64"
-        sharesToBuy:
+        shares:
           type: "integer"
           format: "int32"
     CollectibleItem:
@@ -128,17 +128,5 @@ components:
           type: "number"
           format: "double"
         availableShares:
-          type: "integer"
-          format: "int32"
-    SellRequest:
-      type: "object"
-      properties:
-        collectibleId:
-          type: "integer"
-          format: "int64"
-        userId:
-          type: "integer"
-          format: "int64"
-        sharesToSell:
           type: "integer"
           format: "int32"

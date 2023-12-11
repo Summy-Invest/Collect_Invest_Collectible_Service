@@ -31,7 +31,7 @@ class CollectiblesManager {
                         val record =
                             CollectibleRecord(
                                 1,
-                                LocalDateTime.now(),
+                                LocalDateTime.now().toString(),
                                 sharesToBuy,
                                 item.id,
                                 userId,
@@ -124,7 +124,7 @@ class CollectiblesManager {
                                 val record =
                                     CollectibleRecord(
                                         1,
-                                        LocalDateTime.now(),
+                                        LocalDateTime.now().toString(),
                                         0 - sharesToSell,
                                         item.id,
                                         userId,
@@ -142,7 +142,7 @@ class CollectiblesManager {
 
                                     val updateAvailableShares = UpdateAvailableShares(item.id, item.availableShares)
                                     val updateAvailableSharesResponse = async {
-                                        client.patch("$db/collectableService/collectable/updateCollectableById/${item.id}") {
+                                        client.patch("$db/collectableService/collectable/updateCollectableById") {
                                             contentType(ContentType.Application.Json)
                                             setBody(updateAvailableShares)
                                         }
