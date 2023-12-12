@@ -64,5 +64,18 @@ fun Application.configureRouting() {
                 call.respond(HttpStatusCode.InternalServerError, e.toString())
             }
         }
+
+        get("/getUserCollectibles/{userId}/{collectibleId}") {
+            try {
+                val userId = call.parameters["userId"]!!.toLong()
+                val collectibleId = call.parameters["collectibleId"]!!.toLong()
+                val shares = collectiblesManager.getUserCollectible(userId, collectibleId)
+                call.respond(HttpStatusCode.OK, shares)
+            } catch (e: Throwable) {
+                call.respond(HttpStatusCode.InternalServerError, e.toString())
+            }
+        }
+
+
     }
 }
