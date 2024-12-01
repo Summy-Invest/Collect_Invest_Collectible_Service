@@ -11,8 +11,8 @@ import java.lang.Exception
 import java.time.LocalDateTime
 
 class CollectiblesManager {
-    private val db = "http://localhost:8080"
-    private val financial = "http://localhost:7777"
+    private val db = "http://db-service:8080"
+    private val financial = "http://financial-service:7777"
 
 
     suspend fun buyCollectible(collectibleId: Long, userId: Long, sharesToBuy: Int) {
